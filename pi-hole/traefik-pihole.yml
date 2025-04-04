@@ -1,0 +1,68 @@
+ pihole:
+    depends_on: 
+        - traefik
+    container_name: pihole
+    restart: unless-stopped
+    image: pihole/pihole:latest
+    image: pihole/pihole:latest
+    ports:
+      - "53/tcp"
+      - "53/udp"
+      - "853/udp"
+      - "80/tcp"
+    networks:
+      - proxy
+    environment:
+      TZ: 'Europe/Copenhagen'
+      ServerIP: 192.168.2.44
+      VIRTUAL_HOST: 'oak'
+      # WEBPASSWORD: 'set a secure password here or it will be random'
+    # Volumes store your data between container upgrades
+    volumes:
+      - './pihole/etc-pihole/:/etc/pihole/'
+      - './pihole/etc-dnsmasq.d/:/etc/dnsmasq.d/'
+    dns:
+      - 127.0.0.1
+      - 1.1.1.1
+    # Recommended but not required (DHCP needs NET_ADMIN)
+    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+    #cap_add:
+    #  - NET_ADMIN
+    labels:
+      - "traefik.enable=true"
+
+      # web interface
+      - "traefik.http.routers.pihole.rule=Host(`pihole.${DOMAIN:-locahlost}`)"
+      - "traefik.http.routers.pihole.entrypoints=websecure"
+      - "traefik.http.routers.pihole.tls.certresolver=myresolver"
+      - "traefik.http.routers.pihole.tls=true"
+      - "traefik.http.services.pihole.loadbalancer.server.port=80"
+      # Restrict access to the local network
+      - "traefik.http.routers.pihole.middlewares=iplocal"
+      # the middleware 'go-to-admin' must be defined so that the regex rules can be attached to it
+      - "traefik.http.routers.pihole.middlewares=go-to-admin"
+      # here is the logic provided by gustavomtborges of this gist:
+      - "traefik.http.middlewares.go-to-admin.redirectregex.regex=^https:\\/\\/([^\\/]+)\\/?$$"
+      - "traefik.http.middlewares.go-to-admin.redirectregex.replacement=https://$$1/admin/index.php"
+
+            # DNS-over-TLS
+      - "traefik.tcp.routers.dnsovertls.rule=HostSNI(`pihole.${DOMAIN:-locahlost}`)"
+      #- "traefik.tcp.routers.dnsovertls.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.dnsovertls.entrypoints=dnsovertls"
+      - "traefik.tcp.routers.dnsovertls.tls.certresolver=myresolver"
+      - "traefik.tcp.routers.dnsovertls.service=pihole"
+
+      # Normal DNS coming in on 53 TCP, no TLS
+      - "traefik.tcp.routers.dns.rule=HostSNI(`pihole.${DOMAIN:-locahlost}`)"
+      #- "traefik.tcp.routers.dns.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.dns.entrypoints=dns"
+      - "traefik.tcp.routers.dns.service=pihole"
+
+      # recieves traffic from both the TLS and non-TLS traefik routers
+      - "traefik.tcp.services.pihole.loadbalancer.server.port=53"
+      - "traefik.tcp.services.pihole.loadbalancer.server.port=853"
+
+      # Normal DNS coming in on 53 UDP
+      - "traefik.udp.routers.udpdns.entrypoints=udpdns"
+      - "traefik.udp.routers.udpdns.service=udpdns"
+      - "traefik.udp.services.udpdns.loadbalancer.server.port=53"

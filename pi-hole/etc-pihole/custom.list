@@ -1,0 +1,8 @@
+192.168.8.102 host.media-center.local.com
+192.168.8.102 local.home-media.cloud
+192.168.8.102 pihole.home-media.cloud
+192.168.8.102 firefly-local.home-media.cloud
+192.168.8.102 sonarqube.local.home-media.cloud
+192.168.8.102 firefly-importer-local.home-media.cloud
+192.168.8.102 qbittorrent-local.home-media.cloud
+192.168.8.102 uptime.local.home-media.cloud

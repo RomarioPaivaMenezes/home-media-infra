@@ -1,0 +1,21 @@
+version: "3"
+services:
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    environment: 
+      - WATCHTOWER_LABEL_ENABLE=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/docker/daemon.json:/config.json
+    #command: --interval 30
+    networks:
+       arrs:
+         ipv4_address: "172.23.0.18"
+       frontend:
+
+networks:
+  arrs:
+    external: true
+  frontend:
+    external: true

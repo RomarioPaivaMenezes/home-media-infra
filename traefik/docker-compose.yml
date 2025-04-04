@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  reverse-proxy:
+    # The official v3 Traefik docker image
+    image: traefik:v3.2
+    container_name: traefik
+    # Enables the web UI and tells Traefik to listen to docker
+    command:
+      - "--api"
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+    env_file: ".env"
+    ports:
+      # The HTTP port
+      - "80:80"
+      - "443:443"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8081:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik.yml:/etc/traefik/traefik.yaml:ro
+      - ./data/certs:/var/traefik/certs:rw
+    networks:
+        arrs:
+          ipv4_address: "172.23.0.13"
+        frontend:
+
+networks:
+  frontend:
+    external: true
+  arrs:
+    external: true
